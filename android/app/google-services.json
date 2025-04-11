@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "966123613827",
+    "project_id": "plate-peeps",
+    "storage_bucket": "plate-peeps.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:966123613827:android:c25aa54991bafee11675b6",
+        "android_client_info": {
+          "package_name": "com.example.plate_peeps"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "966123613827-djo9ngbb91edq20r50793pv8edq7gvqf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.plate_peeps",
+            "certificate_hash": "f53096fbf3c06b4e50598fa4bd6349ee692db631"
+          }
+        },
+        {
+          "client_id": "966123613827-gbg9jp2dj4p825191jigv64hpa493nqf.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfHVO7fclJ1__h4MiHksFcQpgosKT3_eg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "966123613827-gbg9jp2dj4p825191jigv64hpa493nqf.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
