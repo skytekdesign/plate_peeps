@@ -16,7 +16,6 @@ class _ProfilePageState extends State<ProfilePage> {
   final user = FirebaseAuth.instance.currentUser;
   String? savedPlate;
   String? savedState;
-  List<Map<String, String>> comments = [];
   List<Map<String, String>> followedPlates = [];
   Map<String, List<Map<String, String>>> followedComments = {};
   final plateController = TextEditingController();
@@ -221,6 +220,37 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: const EdgeInsets.all(16),
         child: ListView(
           children: [
+            FutureBuilder<DocumentSnapshot>(
+              future: FirebaseFirestore.instance
+                  .collection('users')
+                  .doc(user?.uid)
+                  .get(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const CircularProgressIndicator();
+                }
+
+                final userData = snapshot.data?.data() as Map<String, dynamic>?;
+                final username = userData?['username'] ?? 'Anonymous';
+                final email = user?.email ?? 'No Email';
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '@$username',
+                      style: const TextStyle(
+                          fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
+                    Text(
+                      email,
+                      style: const TextStyle(fontSize: 16, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                );
+              },
+            ),
             SavedPlateSection(
               savedPlate: savedPlate,
               savedState: savedState,
