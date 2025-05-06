@@ -225,7 +225,9 @@ class PlatePeepsHome extends StatefulWidget {
 }
 
 class _PlatePeepsHomeState extends State<PlatePeepsHome> {
-  bool followThisPlate = false; // 👈🏽 Add this here
+  bool followThisPlate = false;
+  bool isAlreadyFollowing = false;
+// 👈🏽 Add this here
   final List<String> states = [
     'Alabama',
     'Alaska',
@@ -424,6 +426,23 @@ class _PlatePeepsHomeState extends State<PlatePeepsHome> {
     }
   }
 
+  Future<void> checkIfFollowing() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null || licensePlate.isEmpty) return;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+    final followed = userDoc.data()?['followedPlates'] ?? [];
+
+    setState(() {
+      isAlreadyFollowing = followed.any((p) =>
+          p['plate'] == licensePlate.toUpperCase() &&
+          p['state'] == selectedState);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final key = '${selectedState.toUpperCase()}-${licensePlate.toUpperCase()}';
@@ -492,6 +511,7 @@ class _PlatePeepsHomeState extends State<PlatePeepsHome> {
               isExpanded: true,
               onChanged: (value) {
                 setState(() => selectedState = value!);
+                checkIfFollowing();
                 loadComments(); // refresh comments when state changes
               },
               items: states.map((state) {
@@ -510,6 +530,7 @@ class _PlatePeepsHomeState extends State<PlatePeepsHome> {
               ],
               onChanged: (value) {
                 setState(() => licensePlate = value.toUpperCase());
+                checkIfFollowing();
                 loadComments();
               },
               decoration: const InputDecoration(
@@ -533,17 +554,19 @@ class _PlatePeepsHomeState extends State<PlatePeepsHome> {
             ),
             const SizedBox(height: 10),
             //Checkbox to follow this plate
-            CheckboxListTile(
-              value: followThisPlate,
-              onChanged: (value) {
-                setState(() {
-                  followThisPlate = value ?? false;
-                });
-              },
-              title: const Text("Follow this plate"),
-              controlAffinity: ListTileControlAffinity.leading,
-              contentPadding: EdgeInsets.zero,
-            ),
+            if (!isAlreadyFollowing) ...[
+              CheckboxListTile(
+                value: followThisPlate,
+                onChanged: (value) {
+                  setState(() {
+                    followThisPlate = value ?? false;
+                  });
+                },
+                title: const Text("Follow this plate"),
+                controlAffinity: ListTileControlAffinity.leading,
+                contentPadding: EdgeInsets.zero,
+              ),
+            ],
 
             ElevatedButton(
               onPressed: () {

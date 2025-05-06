@@ -79,7 +79,7 @@ class _ProfilePageState extends State<ProfilePage> {
   @override
   void initState() {
     super.initState();
-    loadSavedPlate();
+    loadSavedPlate().then((_) => loadSavedPlateComments());
     loadFollowedPlates();
   }
 
@@ -93,6 +93,37 @@ class _ProfilePageState extends State<ProfilePage> {
     if (data != null && data.containsKey('savedPlate')) {
       savedPlate = data['savedPlate'];
       savedState = data['savedState'];
+    }
+    setState(() {});
+  }
+
+  List<Map<String, String>> savedPlateComments = [];
+
+  Future<void> loadSavedPlateComments() async {
+    if (savedPlate == null || savedState == null) return;
+
+    final key = '${savedState!.toUpperCase()}-${savedPlate!.toUpperCase()}';
+    final snapshot =
+        await FirebaseFirestore.instance.collection('comments').doc(key).get();
+
+    if (snapshot.exists && snapshot.data() != null) {
+      final data = snapshot.data()!;
+      final raw = data['messages'];
+      if (raw != null && raw is List) {
+        savedPlateComments = raw
+            .whereType<Map<String, dynamic>>()
+            .map((e) => {
+                  'text': e['text']?.toString() ?? '',
+                  'username': e['username']?.toString() ?? 'Anonymous',
+                  'timestamp': (e['timestamp'] is Timestamp)
+                      ? (e['timestamp'] as Timestamp)
+                          .toDate()
+                          .toString()
+                          .split(' ')[0]
+                      : '',
+                })
+            .toList();
+      }
     }
     setState(() {});
   }
@@ -162,6 +193,26 @@ class _ProfilePageState extends State<ProfilePage> {
     });
     savedPlate = null;
     savedState = null;
+    setState(() {});
+  }
+
+  Future<void> unfollowPlate(String plate, String state) async {
+    final docRef =
+        FirebaseFirestore.instance.collection('users').doc(user?.uid);
+    final plateEntry = {
+      'plate': plate,
+      'state': state,
+    };
+
+    await docRef.update({
+      'followedPlates': FieldValue.arrayRemove([plateEntry]),
+    });
+
+    // Remove locally
+    followedPlates.removeWhere(
+        (p) => p['plate'] == plate.toUpperCase() && p['state'] == state);
+    followedComments.remove('${state.toUpperCase()}-${plate.toUpperCase()}');
+
     setState(() {});
   }
 
@@ -258,6 +309,20 @@ class _ProfilePageState extends State<ProfilePage> {
               onSave: savePlate,
               onDelete: deleteSavedPlate,
             ),
+            if (savedPlate != null && savedPlateComments.isNotEmpty) ...[
+              const Divider(height: 32),
+              ExpansionTile(
+                title:
+                    Text("Comments for Saved Plate: $savedState - $savedPlate"),
+                children: savedPlateComments
+                    .map((c) => ListTile(
+                          title: Text(c['text'] ?? ''),
+                          subtitle:
+                              Text('@${c['username']} • ${c['timestamp']}'),
+                        ))
+                    .toList(),
+              ),
+            ],
             if (followedPlates.isNotEmpty) ...[
               const Divider(height: 32),
               const Text("Followed Plates:"),
@@ -268,13 +333,26 @@ class _ProfilePageState extends State<ProfilePage> {
                 final commentsList = followedComments[key] ?? [];
                 return ExpansionTile(
                   title: Text("${plateInfo['state']} - ${plateInfo['plate']}"),
-                  children: commentsList
-                      .map((c) => ListTile(
-                            title: Text(c['text'] ?? ''),
-                            subtitle:
-                                Text('@${c['username']} • ${c['timestamp']}'),
-                          ))
-                      .toList(),
+                  children: [
+                    ...commentsList.map((c) => ListTile(
+                          title: Text(c['text'] ?? ''),
+                          subtitle:
+                              Text('@${c['username']} • ${c['timestamp']}'),
+                        )),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => unfollowPlate(
+                          plateInfo['plate']!,
+                          plateInfo['state']!,
+                        ),
+                        icon: const Icon(Icons.remove_circle_outline,
+                            color: Colors.red),
+                        label: const Text('Unfollow',
+                            style: TextStyle(color: Colors.red)),
+                      ),
+                    ),
+                  ],
                 );
               })
             ],
